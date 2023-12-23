@@ -154,4 +154,4 @@ class BamIO:
                 else:
                     qry_offset += ref_offset
                     ref_offset = 0
-        return  qry_seq[qry_start+qry_offset]
+        return qry_seq[qry_start + qry_offset]
