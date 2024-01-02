@@ -121,6 +121,8 @@ class AlnIO:
             sample_var_regions[smp] = []
             offset = 0
             for sp, ep, var_type in self.__regions:
+                if var_type == "N":
+                    continue
                 gap_cnt = 0
                 for _ in self.__aln_db[smp][sp: ep]:
                     if _ == '-':
@@ -130,3 +132,9 @@ class AlnIO:
                 smp_ep = ep - offset
                 sample_var_regions[smp].append([smp_sp, smp_ep, var_type])
         return sample_var_regions
+
+    def get_ori_seqs(self):
+        ori_seqs = {}
+        for smp in self.__aln_db:
+            ori_seqs[smp] = self.__aln_db[smp].upper().replace('-', '')
+        return ori_seqs
