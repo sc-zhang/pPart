@@ -1,5 +1,5 @@
 from ppart.io.message import Message
-from ppart.io.file_io import BamIO
+from ppart.func.bam_operate import BamOperate
 import pysam
 
 
@@ -26,7 +26,7 @@ class Classifier:
 
     def classify(self, var_regions, bam_file):
         Message.info("Loading bam file")
-        bam_io = BamIO
+        bam_op = BamOperate
         with pysam.AlignmentFile(bam_file, 'rb') as fin:
             for record in fin:
                 qry_start = record.query_alignment_start
@@ -42,5 +42,5 @@ class Classifier:
                 qry_aln_seq = ""
                 for pos in range(var_start, var_end+1):
                     offset = pos-ref_start
-                    base = bam_io.get_base(qry_seq, qry_start, offset, record.cigartuples)
+                    base = bam_op.get_base(qry_seq, qry_start, offset, record.cigartuples)
                     qry_aln_seq += base
