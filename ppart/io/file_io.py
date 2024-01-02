@@ -115,8 +115,21 @@ class AlnIO:
                 for type_seq in sorted(self.__pos_db[pos], key=lambda x: self.__pos_db[pos][x]):
                     fout.write("%d\t%s\t%d\n" % (pos, type_seq, self.__pos_db[pos][type_seq]))
 
-    def get_all_var(self):
-        return self.__regions
+    def get_sample_var_regions(self):
+        sample_var_regions = {}
+        for smp in self.__aln_db:
+            sample_var_regions[smp] = []
+            offset = 0
+            for sp, ep, var_type in self.__regions:
+                gap_cnt = 0
+                for _ in self.__aln_db[smp][sp: ep]:
+                    if _ == '-':
+                        gap_cnt += 1
+                smp_sp = sp - offset
+                offset += gap_cnt
+                smp_ep = ep - offset
+                sample_var_regions[smp].append([smp_sp, smp_ep, var_type])
+        return sample_var_regions
 
 
 class BamIO:
