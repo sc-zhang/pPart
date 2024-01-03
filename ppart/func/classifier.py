@@ -1,6 +1,5 @@
 from ppart.io.message import Message
 from ppart.func.bam_operate import BamOperate
-from ppart.utils.variant_types import Variants
 import pysam
 
 
@@ -25,15 +24,16 @@ class Classifier:
         else:
             return -1
 
-    def classify(self, sample: str, ref_seq: str, gene_id: str, var_regions: list, bam_file: str):
-        Message.info("Loading bam file")
+    def get_similarity(self, ref_sample: str, ref_seq: str, gene_id: str, var_regions: list, bam_file: str) -> list:
         bam_op = BamOperate
+
+        similarity = {_[0]: 0 for _ in var_regions}
         with pysam.AlignmentFile(bam_file, 'rb') as fin:
             for record in fin:
                 ref_name = record.reference_name
 
                 # only on test data
-                if sample.split('.')[0] not in ref_name or gene_id not in ref_name:
+                if ref_sample.split('.')[0] not in ref_name or gene_id not in ref_name:
                     continue
 
                 qry_start = record.query_alignment_start
@@ -57,5 +57,12 @@ class Classifier:
 
                 qry_aln_seq = ''.join(qry_aln_seq)
                 ref_aln_seq = ref_seq[var_start: var_end + 1]
-                if var_type == Variants.INDEL:
-                    print(var_start+1, var_end+1, qry_aln_seq, ref_aln_seq)
+                cur_similarity = 0
+                for _ in range(len(qry_aln_seq)):
+                    if qry_aln_seq[_] == ref_aln_seq[_]:
+                        cur_similarity += 1
+                cur_similarity = cur_similarity*100./len(qry_aln_seq)
+                if cur_similarity > similarity[var_start]:
+                    similarity[var_start] = cur_similarity
+
+        return [similarity[_] for _ in sorted(similarity)]
