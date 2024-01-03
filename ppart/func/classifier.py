@@ -1,5 +1,6 @@
 from ppart.io.message import Message
 from ppart.func.bam_operate import BamOperate
+from ppart.utils.variant_types import Variants
 import pysam
 
 
@@ -42,8 +43,8 @@ class Classifier:
                 region_idx = self.__binary_search(var_regions, ref_start)
                 if region_idx == -1:
                     continue
-                var_start = var_regions[region_idx][0]
-                var_end = var_regions[region_idx][1]
+                var_start, var_end, var_type = var_regions[region_idx]
+
                 qry_aln_seq = []
                 for pos in range(var_start, var_end + 1):
                     offset = pos - ref_start
@@ -56,4 +57,5 @@ class Classifier:
 
                 qry_aln_seq = ''.join(qry_aln_seq)
                 ref_aln_seq = ref_seq[var_start: var_end + 1]
-                print(var_start+1, var_end+1, qry_aln_seq, ref_aln_seq)
+                if var_type == Variants.INDEL:
+                    print(var_start+1, var_end+1, qry_aln_seq, ref_aln_seq)

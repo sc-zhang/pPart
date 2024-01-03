@@ -1,3 +1,6 @@
+from ppart.utils.variant_types import Variants
+
+
 class AlnIO:
     def __init__(self, in_aln_file):
         self.__aln_file = in_aln_file
@@ -74,14 +77,14 @@ class AlnIO:
         for ps, pe in merged_diff_pos:
             if not self.__regions:
                 if ps != 0:
-                    self.__regions.append([0, ps - 1, "N"])
-                self.__regions.append([ps, pe, "V"])
+                    self.__regions.append([0, ps - 1, Variants.NORMAL])
+                self.__regions.append([ps, pe, Variants.ALLVAR])
             else:
                 if self.__regions[-1][1] + 1 != ps:
-                    self.__regions.append([self.__regions[-1][1] + 1, ps - 1, "N"])
-                self.__regions.append([ps, pe, "V"])
+                    self.__regions.append([self.__regions[-1][1] + 1, ps - 1, Variants.NORMAL])
+                self.__regions.append([ps, pe, Variants.ALLVAR])
         if self.__regions[-1][1] + 1 != self.__aln_len:
-            self.__regions.append([self.__regions[-1][1] + 1, self.__aln_len - 1, "N"])
+            self.__regions.append([self.__regions[-1][1] + 1, self.__aln_len - 1, Variants.NORMAL])
 
         self.__path_db = {gid: [] for gid in self.__aln_db}
         self.__pos_db = {}
@@ -121,7 +124,7 @@ class AlnIO:
             sample_var_regions[smp] = []
             offset = 0
             for sp, ep, var_type in self.__regions:
-                if var_type == "N":
+                if var_type == Variants.NORMAL:
                     continue
                 gap_cnt = 0
                 for _ in self.__aln_db[smp][sp: ep]:
@@ -130,7 +133,7 @@ class AlnIO:
                 smp_sp = sp - offset
                 offset += gap_cnt
                 smp_ep = ep - offset
-                sample_var_regions[smp].append([smp_sp, smp_ep, var_type])
+                sample_var_regions[smp].append([smp_sp, smp_ep,  Variants.SNP if gap_cnt == 0 else Variants.INDEL])
         return sample_var_regions
 
     def get_ori_seqs(self):
