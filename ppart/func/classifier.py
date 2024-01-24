@@ -69,8 +69,16 @@ class Classifier:
                 if seq in var_idx_db[site]:
                     idx = var_idx_db[site][seq]
                 else:
-                    idx = '-'
+                    idx = -1
             else:
-                idx = '-'
+                idx = -1
             path_list.append(idx)
         return path_list
+
+    @staticmethod
+    def get_similarity(qry_path, ref_path):
+        cnt = 0
+        for _ in range(len(qry_path)):
+            if qry_path[_] == ref_path[_]:
+                cnt += 1
+        return cnt * 1. / len(qry_path)

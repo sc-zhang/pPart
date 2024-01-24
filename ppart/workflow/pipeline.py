@@ -3,7 +3,6 @@ from os import listdir, path
 from ppart.io.message import Message
 from ppart.io.file_io import AlnIO
 from ppart.func.classifier import Classifier
-from numpy import average
 import argparse
 
 
@@ -55,7 +54,8 @@ def main():
     Message.info("Getting sample paths")
     smp_var_db = {}
     for smp, ref, r in res:
-        smp_var_db[smp] = {}
+        if smp not in smp_var_db:
+            smp_var_db[smp] = {}
         try:
             cur_db = r.get()
             for sp in cur_db:
@@ -67,9 +67,38 @@ def main():
     smp_path_db = {}
     for smp in smp_var_db:
         smp_path_db[smp] = classifier.get_path(smp_var_db[smp], aln_io.get_var_idx())
-    print(smp_path_db)
+
+    Message.info("Comparing paths")
+
+    res = []
+    ref_path_db = aln_io.get_path()
+    pool = multiprocessing.Pool(processes=threads)
+    for smp in smp_path_db:
+        for ref in specific_vars:
+            Message.info("\tComparing {} with {}".format(smp, ref))
+            r = pool.apply_async(classifier.get_similarity, (smp_path_db[smp], ref_path_db[ref]))
+            res.append([smp, ref, r])
+    pool.close()
+    pool.join()
+
+    best_match_db = {}
+    for smp, ref, r in res:
+        if smp not in best_match_db:
+            best_match_db[smp] = ["", 0]
+        try:
+            similarity = r.get()
+            if similarity > best_match_db[smp][-1]:
+                best_match_db[smp][0] = ref
+                best_match_db[smp][1] = similarity
+        except Exception as e:
+            Message.warn("Exception found: {}".format(e))
 
     Message.info("Writing result")
     aln_io.save_path(out_prefix + ".path")
+    with open(out_prefix + ".match", 'w') as fout:
+        for smp in sorted(best_match_db):
+            fout.write("%s Match %s, similarity: %.2f%%\n" % (smp,
+                                                              best_match_db[smp][0],
+                                                              best_match_db[smp][1] * 100.))
 
     Message.info("Finished")
