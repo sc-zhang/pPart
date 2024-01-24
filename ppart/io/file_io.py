@@ -127,13 +127,17 @@ class AlnIO:
                 if var_type == Variants.NORMAL:
                     continue
                 gap_cnt = 0
-                for _ in self.__aln_db[smp][sp: ep]:
+                for _ in self.__aln_db[smp][sp: ep + 1]:
                     if _ == '-':
                         gap_cnt += 1
                 smp_sp = sp - offset
                 offset += gap_cnt
                 smp_ep = ep - offset
-                sample_var_regions[smp].append([smp_sp, smp_ep,  Variants.SNP if gap_cnt == 0 else Variants.INDEL])
+                sample_var_regions[smp].append([smp_sp,
+                                                smp_ep,
+                                                Variants.SNP if gap_cnt == 0 else Variants.INDEL,
+                                                sp,
+                                                ep])
         return sample_var_regions
 
     def get_ori_seqs(self):

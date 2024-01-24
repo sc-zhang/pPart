@@ -35,7 +35,6 @@ def main():
 
     Message.info("Getting sample specific variant regions")
     specific_vars = aln_io.get_sample_var_regions()
-    fa_db = aln_io.get_ori_seqs()
     classifier = Classifier()
 
     res = []
@@ -47,22 +46,29 @@ def main():
             smp = bam_file.split('.')[0]
             Message.info("\tChecking {} with {}".format(ref, smp))
             bam_path = path.join(in_bam_dir, bam_file)
-            r = pool.apply_async(classifier.get_similarity, (ref, fa_db[ref], gid, specific_vars[ref], bam_path,))
+            r = pool.apply_async(classifier.get_sites, (ref, gid, specific_vars[ref], bam_path,))
             res.append([smp, ref, r])
 
     pool.close()
     pool.join()
 
-    similarity_db = {}
+    Message.info("Getting sample paths")
+    smp_var_db = {}
     for smp, ref, r in res:
+        smp_var_db[smp] = {}
         try:
-            similarity = average(r.get())
-            if smp not in similarity_db or similarity > similarity_db[smp][1]:
-                similarity_db[smp] = [ref, similarity]
+            cur_db = r.get()
+            for sp in cur_db:
+                if sp not in smp_var_db[smp]:
+                    smp_var_db[smp][sp] = cur_db[sp]
         except Exception as e:
             Message.warn("Exception found: {}".format(e))
-    print(similarity_db)
-    
+
+    smp_path_db = {}
+    for smp in smp_var_db:
+        smp_path_db[smp] = classifier.get_path(smp_var_db[smp], aln_io.get_var_idx())
+    print(smp_path_db)
+
     Message.info("Writing result")
     aln_io.save_path(out_prefix + ".path")
 

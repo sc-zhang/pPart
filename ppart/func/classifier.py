@@ -24,10 +24,9 @@ class Classifier:
         else:
             return -1
 
-    def get_similarity(self, ref_sample: str, ref_seq: str, gene_id: str, var_regions: list, bam_file: str) -> list:
+    def get_sites(self, ref_sample: str, gene_id: str, var_regions: list, bam_file: str) -> dict:
         bam_op = BamOperate
-
-        similarity = {_[0]: 0 for _ in var_regions}
+        site_db = {}
         with pysam.AlignmentFile(bam_file, 'rb') as fin:
             for record in fin:
                 ref_name = record.reference_name
@@ -43,10 +42,10 @@ class Classifier:
                 region_idx = self.__binary_search(var_regions, ref_start)
                 if region_idx == -1:
                     continue
-                var_start, var_end, var_type = var_regions[region_idx]
+                smp_var_start, smp_var_end, smp_var_type, aln_var_sp, aln_var_ep = var_regions[region_idx]
 
                 qry_aln_seq = []
-                for pos in range(var_start, var_end + 1):
+                for pos in range(smp_var_start, smp_var_end + 1):
                     offset = pos - ref_start
                     if offset < 0 or offset >= len(qry_seq):
                         base = '-'
@@ -56,13 +55,22 @@ class Classifier:
                     qry_aln_seq.append(base)
 
                 qry_aln_seq = ''.join(qry_aln_seq)
-                ref_aln_seq = ref_seq[var_start: var_end + 1]
-                cur_similarity = 0
-                for _ in range(len(qry_aln_seq)):
-                    if qry_aln_seq[_] == ref_aln_seq[_]:
-                        cur_similarity += 1
-                cur_similarity = cur_similarity*100./len(qry_aln_seq)
-                if cur_similarity > similarity[var_start]:
-                    similarity[var_start] = cur_similarity
+                if aln_var_sp not in site_db:
+                    site_db[aln_var_sp] = qry_aln_seq
 
-        return [similarity[_] for _ in sorted(similarity)]
+        return site_db
+
+    @staticmethod
+    def get_path(site_db, var_idx_db):
+        path_list = []
+        for site in var_idx_db:
+            if site - 1 in site_db:
+                seq = site_db[site - 1]
+                if seq in var_idx_db[site]:
+                    idx = var_idx_db[site][seq]
+                else:
+                    idx = '-'
+            else:
+                idx = '-'
+            path_list.append(idx)
+        return path_list
